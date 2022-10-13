@@ -6,3 +6,5 @@ The class just began, so I have covered  only one module so far:
 - Creation an S3 bucket with a lifecycle policy.
 - Creation an EFS share with exposure of mount points in several availability zones.
 - Creation of an EBS volume 
+
+The task for the second  module first lab is basic create an ec2 instance so I did

@@ -13,6 +13,7 @@ provider "aws" {
   region = "us-west-2"
 }
 
+
 resource "aws_security_group" "module3-1" {
   name        = "allow-ssh-and-rdp"
   description = "Allow all ssh and rdp from anyware"
@@ -50,7 +51,7 @@ resource "aws_security_group" "module3-1" {
 
 resource "aws_key_pair" "module3-1" {
   key_name   = "module-3-1"
-  public_key = file("~/.ssh/module-3.pub")
+  public_key = file(var.ssh_key)
 }
 
 resource "aws_instance" "module3-1" {
@@ -59,10 +60,10 @@ resource "aws_instance" "module3-1" {
   security_groups             = [aws_security_group.module3-1.name]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.module3-1.key_name
-  user_data                   = <<EOF
+
+  user_data = <<EOF
 #!/bin/bash
 sudo yum update -y
-sudo reboot
 EOF
 
   tags = {

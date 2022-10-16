@@ -12,7 +12,9 @@ terraform {
 provider "aws" {
   region = "us-west-2"
 }
-
+data "http" "myip" {
+  url = "http://ipv4.icanhazip.com"
+}
 
 resource "aws_security_group" "module3-1" {
   name        = "allow-ssh-and-rdp"
@@ -24,21 +26,21 @@ resource "aws_security_group" "module3-1" {
     from_port   = 0
     to_port     = 0
     protocol    = "icmp"
-    cidr_blocks = ["98.47.170.87/32"]
+    cidr_blocks = ["${chomp(data.http.myip.response_body)}/32"]
   }
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["98.47.170.87/32"]
+    cidr_blocks = ["${chomp(data.http.myip.response_body)}/32"]
 
   }
   ingress {
     from_port   = 3389
     to_port     = 3389
     protocol    = "tcp"
-    cidr_blocks = ["98.47.170.87/32"]
+    cidr_blocks = ["${chomp(data.http.myip.response_body)}/32"]
 
   }
   egress {
@@ -54,6 +56,10 @@ resource "aws_key_pair" "module3-1" {
   public_key = file(var.ssh_key)
 }
 
+locals {
+  private_key = file(trimsuffix(var.ssh_key, ".pub"))
+}
+
 resource "aws_instance" "module3-1" {
   ami                         = "ami-081aaface2871d0d0"
   instance_type               = "t2.micro"
@@ -61,11 +67,17 @@ resource "aws_instance" "module3-1" {
   associate_public_ip_address = true
   key_name                    = aws_key_pair.module3-1.key_name
 
-  user_data = <<EOF
-#!/bin/bash
-sudo yum update -y
-EOF
 
+  connection {
+    type        = "ssh"
+    user        = var.ssh_user
+    host        = self.public_ip
+    private_key = local.private_key
+
+  }
+  provisioner "remote-exec" {
+    inline = ["sudo yum update -y","echo -e '${var.password}\n ${var.password}' | sudo passwd ${var.ssh_user}","shutdown -r 1"]
+  }
   tags = {
     Name = "test"
   }

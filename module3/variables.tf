@@ -10,5 +10,5 @@ variable "ssh_user" {
 variable "password" {
 
   type = string
-
+  sensitive = false
 }

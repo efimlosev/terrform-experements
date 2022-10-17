@@ -41,8 +41,17 @@ resource "aws_security_group" "module3-1" {
     to_port     = 3389
     protocol    = "tcp"
     cidr_blocks = ["${chomp(data.http.myip.response_body)}/32"]
+  }
+
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
 
   }
+
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -66,6 +75,7 @@ resource "aws_instance" "module3-1" {
   security_groups             = [aws_security_group.module3-1.name]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.module3-1.key_name
+  availability_zone           = aws_default_subnet.default_az1.availability_zone
 
 
   connection {
@@ -76,9 +86,55 @@ resource "aws_instance" "module3-1" {
 
   }
   provisioner "remote-exec" {
-    inline = ["sudo yum update -y","echo -e '${var.password}\n ${var.password}' | sudo passwd ${var.ssh_user}","shutdown -r 1"]
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install -y amazon-efs-utils",
+
+    ]
   }
   tags = {
     Name = "test"
   }
+
+  depends_on = [
+    aws_efs_mount_target.alpha
+  ]
 }
+
+resource "aws_default_subnet" "default_az1" {
+  availability_zone = "us-west-2a"
+
+  tags = {
+    Name = "Default subnet for us-west-2a"
+  }
+}
+
+resource "aws_efs_file_system" "efs" {
+  creation_token   = "efs-test"
+  performance_mode = "generalPurpose"
+  encrypted        = true
+  throughput_mode  = "bursting"
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+
+  }
+}
+
+resource "aws_efs_mount_target" "alpha" {
+  file_system_id = aws_efs_file_system.efs.id
+  subnet_id      = aws_default_subnet.default_az1.id
+  security_groups = [
+    aws_security_group.module3-1.id
+  ]
+}
+
+resource "aws_ebs_volume" "ebs" {
+  availability_zone = "us-west-2a"
+  size              = 100
+  type              = "gp2"
+
+  encrypted = true
+  tags = {
+    Name = "EBSDemo"
+  }
+} 

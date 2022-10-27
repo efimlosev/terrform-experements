@@ -30,7 +30,7 @@ resource "aws_security_group" "sg-elb" {
     description = "icmp"
     protocol    = "icmp"
     from_port   = 0
-    to_port     = 8
+    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
 
   }
@@ -60,27 +60,17 @@ resource "aws_key_pair" "module4-key-pair"{
   key_name   = "module-key"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC40CLwBsChecKwWWWaEsgf2fx26Dvor+gTeLABFzkSlk2560IwtsQ0iUQ8jjv96o0KgFcfMVkM0yzwzeCsat+6YIvUHfesI6oIJ8iYk2vae7qICv+4bcN3mIoWpzTDIAUm3RJCsP25FUumbtTifGhCsQuGfvVzfSgQhv2SSflw2KFlp7cZ+GM9aG9yYlE48iMWrfkSPTNk+T9y0y+ZNjX49dBYSIH8qaGKzSj+CfwiHIYdI31dG54GRXhdkvDUNoYve/jP28iCNro2x2JMeFe+KKJAyYblTGJwwuXghxN1RTPFfSQ4PmP5F6npv0B536gOHRrYs1X5ddr4tIHGbVp/sIp3saGnhrrAfL7mLAnKTkROLgxeXOrVbu/ld3rb7vVvD5UmBK/7QXIyp3xdjZmJY0s/318U3dYK7bHPBb7U4FNW4iAzHChvmcxdHMk49xB466o+4hEIXhWMU2bsx12RjifEyAsifbVWS/g1q9myVYkBHvX70quaqXVkiAp51Uc= efim@efim-laptop"
 }
+resource "aws_launch_template" "web" {
 
-resource "aws_launch_template" "module4" {
+}
+resource "aws_launch_template" "module4-lt" {
     name_prefix   = "module4"
     image_id      = "ami-0d593311db5abb72b"
     instance_type = "t2.nano"
     key_name      = "module-key"
     user_data     = filebase64("user_data.sh")
-    block_device_mappings {
-        device_name = "/dev/sda1"
-        ebs {
-        volume_size = 8
-        volume_type = "gp2"
-        delete_on_termination = true
-        }
-    }
-    
-    network_interfaces {
-      security_groups = [aws_security_group.sg-elb.id]
+    vpc_security_group_ids = [aws_security_group.sg-elb.id]
 
-    
-    }
     private_dns_name_options {
       hostname_type = "ip-name"
     }
@@ -123,11 +113,22 @@ resource "aws_autoscaling_group" "module-4-asg" {
   max_size = 4
   min_size = 3
   launch_template {
-    id = aws_launch_template.module4.id
+    id = aws_launch_template.module4-lt.id
     version = "$Latest"
   }
   target_group_arns = [aws_lb_target_group.module4-tg.arn]
   vpc_zone_identifier = [aws_default_subnet.az1.id, aws_default_subnet.az2.id, aws_default_subnet.az3.id]
+}
+
+resource "aws_lb_listener" "module4-lb-listener" {
+  load_balancer_arn = aws_lb.module4-lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.module4-tg.arn
+  }
 }
   
 resource "aws_lb" "module4-lb" {

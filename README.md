@@ -7,5 +7,6 @@ The class just began, so I have covered  only one module so far:
 - Creation an EFS share with exposure of mount points in several availability zones.
 - Creation of an EBS volume 
 
-The task for the second  module  the first lab is basic create an ec2 instance so I did.
+The task for the third  module  the first lab is basic create an ec2 instance so I did.
 
+The fourth module is pretty create a load balancer for autoscaling groups.

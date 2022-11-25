@@ -16,14 +16,13 @@ provider "aws" {
 
 
 locals {
-
   s3_names = [for backet in ["sourcebucket", "sourcebucket-resized"] : join("-", [var.namespace, backet])]
 }
 
 resource "aws_s3_bucket" "module8-s3" {
-  for_each = toset(local.s3_names)
-  bucket   = each.value
-  force_destroy = true
+  for_each      = toset(local.s3_names)
+  bucket        = each.value
+  force_destroy = t
 
   tags = {
     Name = each.value
@@ -36,41 +35,6 @@ resource "aws_s3_bucket_acl" "module8-s3-acl" {
   acl      = "private"
 
 }
-
-
-/* resource "aws_iam_policy" "module8-s3-iam-policy" {
-  policy = <<POLICY
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:PutLogEvents",
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject"
-            ],
-            "Resource": "arn:aws:s3:::sourcebucket/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject"
-            ],
-            "Resource": "arn:aws:s3:::sourcebucket-resized/*"
-        }
-    ]
-}
-POLICY
-name = var.iam-policy-name
-} */
 
 resource "aws_iam_policy" "module8-s3-iam-policy" {
   name        = var.iam-policy-name
@@ -93,20 +57,20 @@ data "aws_iam_policy_document" "module8-policy_doc" {
     actions = [
       "s3:GetObject"
     ]
-    effect    = "Allow"
-   // resources = ["arn:aws:s3:::${each.value}/*"]
-   resources = ["arn:aws:s3:::${local.s3_names[0]}/*"]
+    effect = "Allow"
+    // resources = ["arn:aws:s3:::${each.value}/*"]
+    resources = ["arn:aws:s3:::${local.s3_names[0]}/*"]
   }
 
-    statement {
+  statement {
     actions = [
       "s3:PutObject"
     ]
-    effect    = "Allow"
-   // resources = ["arn:aws:s3:::${each.value}/*"]
-   resources = ["arn:aws:s3:::${local.s3_names[1]}/*"]
+    effect = "Allow"
+    // resources = ["arn:aws:s3:::${each.value}/*"]
+    resources = ["arn:aws:s3:::${local.s3_names[1]}/*"]
   }
-} 
+}
 
 data "aws_iam_policy_document" "module8-s3-assume-role-policy" {
   statement {
@@ -120,9 +84,9 @@ data "aws_iam_policy_document" "module8-s3-assume-role-policy" {
 }
 
 resource "aws_iam_role" "module8-iam-role" {
-  name = var.iam-role-name
+  name               = var.iam-role-name
   assume_role_policy = data.aws_iam_policy_document.module8-s3-assume-role-policy.json
-  
+
 }
 
 resource "aws_iam_role_policy_attachment" "module8-iam-role-policy-attachment" {
@@ -131,18 +95,18 @@ resource "aws_iam_role_policy_attachment" "module8-iam-role-policy-attachment" {
 }
 
 resource "aws_lambda_function" "module8-lambda-function" {
-  function_name = "CreateThumbnail"
-  role          = aws_iam_role.module8-iam-role.arn
-  handler       = "index.handler"
-  runtime       = "nodejs16.x"
-  filename      = "function.zip"
+  function_name    = "CreateThumbnail"
+  role             = aws_iam_role.module8-iam-role.arn
+  handler          = "index.handler"
+  runtime          = "nodejs16.x"
+  filename         = "function.zip"
   source_code_hash = filebase64sha256("function.zip")
 
   tags = {
     Name = "CreateThumbnail"
   }
 }
-  
+
 resource "aws_lambda_permission" "module8-lambda-permission" {
   statement_id  = "s3invoke"
   action        = "lambda:InvokeFunction"

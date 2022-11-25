@@ -1,23 +1,23 @@
 variable "namespace" {
-    type        = string
-    default = "efim"
-  
+  type    = string
+  default = "efim"
+
 }
 
 variable "iam-policy-name" {
-    type        = string
-    default = "AWSLambdaS3Policy"
-  
+  type    = string
+  default = "AWSLambdaS3Policy"
+
 }
 
 variable "iam-role-name" {
-    type        = string
-    default = "lambda-s3-role"
-  
+  type    = string
+  default = "lambda-s3-role"
+
 }
 
 variable "event-name" {
-    type     = string
-    default = "lambda-trigger"
-  
+  type    = string
+  default = "lambda-trigger"
+
 }
